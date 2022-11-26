@@ -1,1 +1,1 @@
-# Bargo - an (before) argocd file processor
+# Bargo - a (before) argocd file processor
