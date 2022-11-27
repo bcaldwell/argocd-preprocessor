@@ -46,7 +46,8 @@ struct MetadataTarget {
 
 #[derive(serde::Deserialize, Debug, Default)]
 struct MetadataProjectOptions {
-    cluster_resource_whitelist: Vec<crate::app_project::AppProjectClusterResourceWhitelist>,
+    additional_namespaces: Option<Vec<String>>,
+    cluster_resource_whitelist: Option<Vec<crate::app_project::AppProjectClusterResourceWhitelist>>,
 }
 
 #[derive(serde::Serialize, Debug)]

@@ -202,6 +202,7 @@ impl ProjectProcessor {
             .spec
             .source_repos
             .insert(self.config.argocd_source_repo.clone());
+
         project
             .project
             .spec
@@ -214,12 +215,34 @@ impl ProjectProcessor {
 
         match metadata.project_options.as_ref() {
             Some(options) => {
-                for allow_list_item in options.cluster_resource_whitelist.iter() {
-                    project
-                        .project
-                        .spec
-                        .cluster_resource_whitelist
-                        .insert(allow_list_item.clone());
+                match options.additional_namespaces.as_ref() {
+                    Some(additional_namespaces) => {
+                        for namespace in additional_namespaces.iter() {
+                            project
+                                .project
+                                .spec
+                                .destinations
+                                .insert(AppProjectDestination {
+                                    name: "in-cluster".to_string(),
+                                    namespace: namespace.to_string(),
+                                    server: "https://kubernetes.devault.svc".to_string(),
+                                });
+                        }
+                    }
+                    None => (),
+                }
+
+                match options.cluster_resource_whitelist.as_ref() {
+                    Some(cluster_resource_whitelist) => {
+                        for allow_list_item in cluster_resource_whitelist.iter() {
+                            project
+                                .project
+                                .spec
+                                .cluster_resource_whitelist
+                                .insert(allow_list_item.clone());
+                        }
+                    }
+                    None => (),
                 }
             }
             None => (),
@@ -391,16 +414,29 @@ fn merge(a: &mut serde_json::Value, b: serde_json::Value) {
 }
 
 // Encodes a value of any type into yaml
-fn yaml_encode_filter(value: &serde_json::Value, _args: &HashMap<String, serde_json::Value>) -> tera::Result<serde_json::Value> {
-    serde_yaml::to_string(&value).map(|s| s.trim().to_string()).map(serde_json::Value::String).map_err(|e| tera::Error::from(format!("{e}")))
+fn yaml_encode_filter(
+    value: &serde_json::Value,
+    _args: &HashMap<String, serde_json::Value>,
+) -> tera::Result<serde_json::Value> {
+    serde_yaml::to_string(&value)
+        .map(|s| s.trim().to_string())
+        .map(serde_json::Value::String)
+        .map_err(|e| tera::Error::from(format!("{e}")))
 }
 
 // Indents each line of a string
-fn nindent_filter(value: &serde_json::Value, args: &HashMap<String, serde_json::Value>) -> tera::Result<serde_json::Value> {
+fn nindent_filter(
+    value: &serde_json::Value,
+    args: &HashMap<String, serde_json::Value>,
+) -> tera::Result<serde_json::Value> {
     let s = tera::try_get_value!("nindent", "value", String, value);
     let spaces = match args.get("spaces") {
         Some(spaces) => tera::try_get_value!("nindent", "spaces", usize, spaces),
-        None => return Err(tera::Error::msg("Filter `nindent` expected an arg called `spaces`")),
+        None => {
+            return Err(tera::Error::msg(
+                "Filter `nindent` expected an arg called `spaces`",
+            ))
+        }
     };
 
     let indent = " ".repeat(spaces);
