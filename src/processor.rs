@@ -125,12 +125,13 @@ impl ProjectProcessor {
 
                 match metadata.script.as_ref() {
                     Some(script) => {
-                        std::process::Command::new("bash")
+                        let output = std::process::Command::new("bash")
                             .arg("-c")
                             .arg(script)
                             .env("in", app_dir)
                             .env("out", out_folder_path)
                             .output()?;
+                        warn!(output=?output, "script output")
                     }
                     None => (),
                 };
