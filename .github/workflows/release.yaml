@@ -33,7 +33,7 @@ jobs:
         run: cargo build --release --locked
 
       - name: Tar artifacts
-        run: tar -czvf -C target/release bargo-${{ matrix.asset_name_suffix }}.tar.gz bargo
+        run: cd target/release && tar -czvf bargo-${{ matrix.asset_name_suffix }}.tar.gz bargo && cd ../..
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
