@@ -9,8 +9,10 @@ edition = "2021"
 anyhow = "1.0.66"
 clap = { version = "4.0.27", features = ["derive"] }
 glob = "0.3.0"
+regex = "1.7.0"
 serde = { version = "1.0.147", features = ["derive"] }
 serde_json = "1.0.89"
+serde_yaml = "0.9.14"
 tempdir = "0.3.7"
 tera = "1.17.1"
 toml = "0.5.9"
