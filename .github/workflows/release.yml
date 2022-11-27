@@ -1,0 +1,64 @@
+name: Release
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build_artifacts:
+    name: Build artifacts for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - name: linux
+            os: ubuntu-latest
+            asset_name_suffix: x86_64-linux
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+
+      - name: Build
+        run: cargo build --release --locked
+
+      - name: Rename artifacts
+        run: mv target/release/bargo target/release/bargo-${{ matrix.asset_name_suffix }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: bargo-${{ matrix.asset_name_suffix }}
+          path: target/release/bargo-${{ matrix.asset_name_suffix }}
+
+  deploy_artifacts:
+    name: Create release
+    needs: [build_artifacts]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create release directory
+        run: mkdir release
+      - name: Get artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: release
+      - name: Generate Checksum
+        uses: jmgilman/actions-generate-checksum@v1.0.0
+        with:
+          patterns: "release/*/*"
+      - run: ls -R release && cat checksum.txt
+      - name: Create release with artifact
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.event.inputs.tag }}
+          fail_on_unmatched_files: true
+          generate_release_notes: true
+          files: |
+            release/*/*
+            checksum.txt
