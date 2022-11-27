@@ -207,7 +207,7 @@ impl ProjectProcessor {
             .spec
             .destinations
             .insert(AppProjectDestination {
-                name: "in-cluster".to_string(),
+                name: target_name.to_string(),
                 namespace: app_context.namespace.clone(),
                 server: "https://kubernetes.devault.svc".to_string(),
             });
