@@ -37,14 +37,16 @@ impl ProjectProcessor {
         let output_path = output_path.canonicalize()?;
 
         info!(input_path=?input_path, output_path=?output_path, "resolved input and output paths");
-        let config = read_config(&input_path).unwrap();
+        let config = read_config(&input_path)?;
 
         let template_path = input_path.join(&config.application_template);
         let template_name = template_path.strip_prefix(&input_path);
         let template_name = template_name?.display().to_string();
 
         let tera_template_path = input_path.join("**/*.tera").to_string_lossy().to_string();
-        let tera = tera::Tera::new(&tera_template_path)?;
+        let mut tera = tera::Tera::new(&tera_template_path)?;
+        tera.register_filter("yaml_encode", yaml_encode_filter);
+        tera.register_filter("nindent", nindent_filter);
 
         return Ok(ProjectProcessor {
             input_path,
@@ -386,4 +388,25 @@ fn merge(a: &mut serde_json::Value, b: serde_json::Value) {
     }
 
     *a = b;
+}
+
+// Encodes a value of any type into yaml
+fn yaml_encode_filter(value: &serde_json::Value, _args: &HashMap<String, serde_json::Value>) -> tera::Result<serde_json::Value> {
+    serde_yaml::to_string(&value).map(|s| s.trim().to_string()).map(serde_json::Value::String).map_err(|e| tera::Error::from(format!("{e}")))
+}
+
+// Indents each line of a string
+fn nindent_filter(value: &serde_json::Value, args: &HashMap<String, serde_json::Value>) -> tera::Result<serde_json::Value> {
+    let s = tera::try_get_value!("nindent", "value", String, value);
+    let spaces = match args.get("spaces") {
+        Some(spaces) => tera::try_get_value!("nindent", "spaces", usize, spaces),
+        None => return Err(tera::Error::msg("Filter `nindent` expected an arg called `spaces`")),
+    };
+
+    let indent = " ".repeat(spaces);
+    let indent = format!("\n{}", indent);
+
+    let s = format!("\n{}", s);
+    let s = s.replace("\n", &indent);
+    return Ok(serde_json::Value::String(s));
 }
