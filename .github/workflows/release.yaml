@@ -32,8 +32,8 @@ jobs:
       - name: Build
         run: cargo build --release --locked
 
-      - name: Rename artifacts
-        run: mv target/release/bargo target/release/bargo-${{ matrix.asset_name_suffix }}
+      - name: Tar artifacts
+        run: tar -czvf target/release/bargo-${{ matrix.asset_name_suffix }}.tar.gz target/release/
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
