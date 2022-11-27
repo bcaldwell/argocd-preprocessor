@@ -13,7 +13,7 @@ jobs:
         include:
           - name: linux
             os: ubuntu-latest
-            asset_name_suffix: x86_64-linux
+            asset_name_suffix: linux-x86_64
 
     steps:
       - name: Checkout
