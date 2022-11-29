@@ -1,9 +1,9 @@
 mod app_project;
 mod processor;
-use anyhow::{Result};
+use anyhow::Result;
 use clap::Parser;
 use processor::ProjectProcessor;
-use tracing::{error};
+use tracing::error;
 use tracing_subscriber;
 
 #[derive(Parser, Debug)]

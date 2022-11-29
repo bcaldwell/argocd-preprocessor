@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 use std::{collections::HashMap, error::Error, fs, io::Write, path};
-use tracing::{info, warn};
+use tracing::{debug, error, info, warn};
 
 use crate::{app_project::*, Args, Config, Metadata, TemplateContext};
 
@@ -105,7 +105,7 @@ impl ProjectProcessor {
                 target_project.applications.push(argo_application);
 
                 let out_folder_path = self.output_path.join(&app_context.path);
-                info!(from_path=?self.input_path, to_path=?out_folder_path, "copying");
+                // debug!(from_path=?self.input_path, to_path=?out_folder_path, "copying");
 
                 let mut target_vars = self
                     .config
@@ -131,7 +131,13 @@ impl ProjectProcessor {
                             .env("in", app_dir)
                             .env("out", out_folder_path)
                             .output()?;
-                        warn!(output=?output, "script output")
+                        info!(output=?output, "script output");
+                        if !output.status.success() {
+                            return Err(anyhow!(
+                                "script exited with a non zero: {:?}",
+                                output.stdout
+                            ));
+                        }
                     }
                     None => (),
                 };
@@ -317,7 +323,7 @@ impl ProjectProcessor {
         from_dir: &path::PathBuf,
         to_dir: &path::PathBuf,
     ) -> Result<()> {
-        info!(from=?from_dir, to=?to_dir, "copying!");
+        // info!(from=?from_dir, to=?to_dir, "copying!");
         for f in fs::read_dir(from_dir)? {
             let entry = f?;
             let path = entry.path();
@@ -343,7 +349,7 @@ impl ProjectProcessor {
                 continue;
             }
 
-            info!(from_path=?path, to_path=?to_path, "copying file");
+            debug!(from_path=?path, to_path=?to_path, "copying file");
             fs::copy(path, to_path)?;
         }
         return Ok(());
