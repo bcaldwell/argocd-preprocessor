@@ -220,6 +220,13 @@ impl ProjectProcessor {
                 server: "https://kubernetes.devault.svc".to_string(),
             });
 
+        project.project.spec.cluster_resource_whitelist.insert(
+            AppProjectClusterResourceWhitelist {
+                group: "".to_string(),
+                kind: "Namespace".to_string(),
+            },
+        );
+
         match metadata.project_options.as_ref() {
             Some(options) => {
                 match options.additional_namespaces.as_ref() {
