@@ -22,6 +22,7 @@ struct Config {
     targets: Vec<ConfigTarget>,
     vars: Option<serde_json::Value>,
     default_application_options: Option<serde_json::Value>,
+    argocd_config_application_options: Option<serde_json::Value>,
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Debug)]

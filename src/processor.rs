@@ -92,8 +92,10 @@ impl ProjectProcessor {
                     self.template_context_for_dir(app_dir, &target.name, &metadata)?;
 
                 self.create_or_update_app_project_for_dir(&target.name, &metadata, &app_context);
-                let argo_application =
-                    self.generate_argo_application_for_dir(&metadata, &app_context)?;
+                let argo_application = self.generate_argo_application_for_dir(
+                    &metadata.application_options,
+                    &app_context,
+                )?;
 
                 let target_project = self
                     .targets
@@ -147,6 +149,24 @@ impl ProjectProcessor {
         for (target_name, target) in self.targets.iter() {
             let config_dir = self.output_path.join(target_name).join("argocd-config");
             fs::create_dir_all(&config_dir)?;
+
+            // write application file for argo_cd
+
+            let mut file = fs::File::create(config_dir.join("argocd-config.yaml"))?;
+            let app = self.generate_argo_application_for_dir(
+                &self.config.argocd_config_application_options,
+                &TemplateContext {
+                    namespace: self.config.argocd_namespace.clone(),
+                    project: "default".to_string(),
+                    app_name: "argocd-config".to_string(),
+                    normalized_project: "default".to_string(),
+                    normalized_app_name: "argocd-config".to_string(),
+                    path: format!("{}/argocd-config", target_name),
+                    target_name: target_name.to_string(),
+                },
+            )?;
+            file.write_all(app.as_bytes())?;
+            // write application files for all folders
             for (project_name, project) in target.iter() {
                 let mut file =
                     fs::File::create(config_dir.join(format!("{:}.yaml", project_name)))?;
@@ -164,7 +184,7 @@ impl ProjectProcessor {
 
     fn generate_argo_application_for_dir(
         &self,
-        metadata: &Metadata,
+        application_options: &Option<serde_json::Value>,
         app_context: &TemplateContext,
     ) -> Result<String> {
         let mut template_context = self
@@ -172,13 +192,14 @@ impl ProjectProcessor {
             .default_application_options
             .clone()
             .unwrap_or_else(default_serde_object);
+
         merge(
             &mut template_context,
-            metadata
-                .application_options
+            application_options
                 .clone()
                 .unwrap_or_else(default_serde_object),
         );
+
         merge(&mut template_context, serde_json::to_value(app_context)?);
 
         return self.render_template(&self.application_template_name, template_context);
