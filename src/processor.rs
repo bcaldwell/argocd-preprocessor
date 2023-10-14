@@ -366,6 +366,7 @@ impl ProjectProcessor {
             let mut to_path = to_dir.join(&entry.file_name());
             fs::create_dir_all(to_path.parent().unwrap())?;
 
+
             if path.extension().unwrap_or_default() == "tera" {
                 let tera_template_name = path.strip_prefix(&self.input_path)?;
                 let contents = self.render_template(
