@@ -80,4 +80,3 @@ fn run() -> Result<()> {
     let mut project_processor = ProjectProcessor::new(args)?;
     return project_processor.process();
 }
-

@@ -1,6 +1,6 @@
-use std::collections::HashSet;
 use serde::Deserialize;
 use serde::Serialize;
+use std::collections::HashSet;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -46,10 +46,7 @@ impl AppProject {
         return AppProject {
             api_version: "argoproj.io/v1alpha1".to_string(),
             kind: "AppProject".to_string(),
-            metadata: AppProjectMetadata {
-                name,
-                namespace,
-            },
+            metadata: AppProjectMetadata { name, namespace },
             spec: AppProjectSpec {
                 destinations: HashSet::new(),
                 source_repos: HashSet::new(),
