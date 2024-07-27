@@ -376,6 +376,7 @@ impl ProjectProcessor {
             fs::create_dir_all(to_path.parent().unwrap())?;
 
             if path.extension().unwrap_or_default() == "tera" {
+                info!(vars=?tera_context, to_path=?to_path, "templating file");
                 let tera_template_name = path.strip_prefix(&self.input_path)?;
                 let contents = self.render_template(
                     &tera_template_name.display().to_string(),
