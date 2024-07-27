@@ -28,6 +28,7 @@ struct Config {
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
 struct ConfigTarget {
     name: String,
+    vars: Option<serde_json::Value>,
 }
 
 #[derive(serde::Deserialize, Debug, Default)]

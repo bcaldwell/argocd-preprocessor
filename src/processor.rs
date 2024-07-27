@@ -59,6 +59,8 @@ impl ProjectProcessor {
     }
 
     pub fn process(&mut self) -> Result<()> {
+        let mut vars_by_target: HashMap<String, serde_json::Value> = HashMap::new();
+
         for target in &self.config.targets {
             let target_dir = self.output_path.join(&target.name);
             if target_dir.exists() {
@@ -67,6 +69,17 @@ impl ProjectProcessor {
             fs::create_dir_all(target_dir)?;
 
             self.targets.insert(target.name.clone(), HashMap::new());
+
+            let mut merged_vars = self
+                .config
+                .vars
+                .clone()
+                .unwrap_or_else(default_serde_object);
+            merge(
+                &mut merged_vars,
+                target.vars.clone().unwrap_or_else(default_serde_object),
+            );
+            vars_by_target.insert(target.name.clone(), merged_vars);
         }
 
         for metadata_file in glob::glob(self.input_path.join("**/metadata.toml").to_str().unwrap())?
@@ -109,11 +122,7 @@ impl ProjectProcessor {
                 let out_folder_path = self.output_path.join(&app_context.path);
                 // debug!(from_path=?self.input_path, to_path=?out_folder_path, "copying");
 
-                let mut target_vars = self
-                    .config
-                    .vars
-                    .clone()
-                    .unwrap_or_else(default_serde_object);
+                let mut target_vars = vars_by_target.get(&target.name).unwrap().clone(); // unwrap since the value should always be there due to the above for loop
                 merge(
                     &mut target_vars,
                     target.vars.clone().unwrap_or_else(default_serde_object),
