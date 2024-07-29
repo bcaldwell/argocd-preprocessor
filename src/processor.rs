@@ -401,16 +401,24 @@ impl ProjectProcessor {
         template_context: &TemplateContext,
         to_dir: &path::PathBuf,
     ) -> Result<()> {
-        if (!to_dir.join("files/Charts.yaml").exists()){
-            info!(?to_dir, "not writing bargo values file as didn't find Chart.yaml file in files subdir");
-            return Ok(())
+        if !to_dir.join("files/Chart.yaml").exists() {
+            info!(
+                ?to_dir,
+                "not writing bargo values file as didn't find Chart.yaml file in files subdir"
+            );
+            return Ok(());
         }
-        let mut values = tera_context.clone();
-        merge(&mut values, serde_json::to_value(template_context)?);
+
+        let mut bargo_vars = serde_json::Map::new();
+        bargo_vars.insert("vars".to_string(), serde_json::to_value(tera_context)?);
+        bargo_vars.insert(
+            "metadata".to_string(),
+            serde_json::to_value(template_context)?,
+        );
 
         let mut values_map = serde_json::Map::new();
-        values_map.insert("bargo".to_string(), values);
-        values = serde_json::Value::Object(values_map);
+        values_map.insert("bargo".to_string(), serde_json::Value::Object(bargo_vars));
+        let values = serde_json::Value::Object(values_map);
 
         let s_values = yaml_encode(&values)?;
         let mut file = fs::File::create(to_dir.join("files/bargo_values.yaml"))?;
@@ -491,17 +499,14 @@ fn yaml_encode_filter(
     _args: &HashMap<String, serde_json::Value>,
 ) -> tera::Result<serde_json::Value> {
     return yaml_encode(value)
-    // serde_yaml::to_string(&value)
-    //     .map(|s| s.trim().to_string())
+        // serde_yaml::to_string(&value)
+        //     .map(|s| s.trim().to_string())
         .map(serde_json::Value::String)
-        .map_err(|e| tera::Error::from(format!("{e}")))
+        .map_err(|e| tera::Error::from(format!("{e}")));
 }
 
-fn yaml_encode(
-    value: &serde_json::Value,
-) -> Result<String> {
-    Ok(serde_yaml::to_string(&value)
-        .map(|s| s.trim().to_string())?)
+fn yaml_encode(value: &serde_json::Value) -> Result<String> {
+    Ok(serde_yaml::to_string(&value).map(|s| s.trim().to_string())?)
 }
 
 // Indents each line of a string
