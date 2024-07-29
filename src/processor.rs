@@ -129,10 +129,12 @@ impl ProjectProcessor {
                 );
 
                 self.copy_and_template_folder(
-                    target_vars,
+                    &target_vars,
                     &app_dir.to_path_buf(),
                     &out_folder_path,
                 )?;
+
+                self.write_bargo_values(&target_vars, &app_context, &out_folder_path)?;
 
                 match metadata.script.as_ref() {
                     Some(script) => {
@@ -356,7 +358,7 @@ impl ProjectProcessor {
 
     fn copy_and_template_folder(
         &self,
-        tera_context: serde_json::Value,
+        tera_context: &serde_json::Value,
         from_dir: &path::PathBuf,
         to_dir: &path::PathBuf,
     ) -> Result<()> {
@@ -366,7 +368,7 @@ impl ProjectProcessor {
             let path = entry.path();
             if path.is_dir() {
                 self.copy_and_template_folder(
-                    tera_context.clone(),
+                    &tera_context.clone(),
                     &path,
                     &to_dir.join(&entry.file_name()),
                 )?;
@@ -391,6 +393,31 @@ impl ProjectProcessor {
             fs::copy(path, to_path)?;
         }
         return Ok(());
+    }
+
+    fn write_bargo_values(
+        &self,
+        tera_context: &serde_json::Value,
+        template_context: &TemplateContext,
+        to_dir: &path::PathBuf,
+    ) -> Result<()> {
+        if (!to_dir.join("files/Charts.yaml").exists()){
+            info!(?to_dir, "not writing bargo values file as didn't find Chart.yaml file in files subdir");
+            return Ok(())
+        }
+        let mut values = tera_context.clone();
+        merge(&mut values, serde_json::to_value(template_context)?);
+
+        let mut values_map = serde_json::Map::new();
+        values_map.insert("bargo".to_string(), values);
+        values = serde_json::Value::Object(values_map);
+
+        let s_values = yaml_encode(&values)?;
+        let mut file = fs::File::create(to_dir.join("files/bargo_values.yaml"))?;
+        file.write_all(s_values.as_bytes())?;
+        file.flush()?;
+
+        Ok(())
     }
 }
 
@@ -463,10 +490,18 @@ fn yaml_encode_filter(
     value: &serde_json::Value,
     _args: &HashMap<String, serde_json::Value>,
 ) -> tera::Result<serde_json::Value> {
-    serde_yaml::to_string(&value)
-        .map(|s| s.trim().to_string())
+    return yaml_encode(value)
+    // serde_yaml::to_string(&value)
+    //     .map(|s| s.trim().to_string())
         .map(serde_json::Value::String)
         .map_err(|e| tera::Error::from(format!("{e}")))
+}
+
+fn yaml_encode(
+    value: &serde_json::Value,
+) -> Result<String> {
+    Ok(serde_yaml::to_string(&value)
+        .map(|s| s.trim().to_string())?)
 }
 
 // Indents each line of a string
