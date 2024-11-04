@@ -416,8 +416,14 @@ impl ProjectProcessor {
             serde_json::to_value(template_context)?,
         );
 
+        let mut bargo_values_map = serde_json::Map::new();
+        bargo_values_map.insert("bargo".to_string(), serde_json::Value::Object(bargo_vars));
+        // put values under global namespace so that all subcharts have access to them
         let mut values_map = serde_json::Map::new();
-        values_map.insert("bargo".to_string(), serde_json::Value::Object(bargo_vars));
+        values_map.insert(
+            "global".to_string(),
+            serde_json::Value::Object(bargo_values_map),
+        );
         let values = serde_json::Value::Object(values_map);
 
         let s_values = yaml_encode(&values)?;
